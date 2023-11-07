@@ -35,10 +35,14 @@ function buildHeroBlock(main) {
 /**
  * Event triggered from sidekick
  * @param {object} detail details about the project
+ * https://drive.google.com/drive/folders/1gixVQK3ZGOBoEmqsCeDvYhDZlHr0MRWL
+ * window.open(sk?.config?.mountpoint, '_blank')
+ * 
  */
 const openDrive = ({ detail }) => {
   const sk = detail.data;
-  window.open(sk?.config?.mountpoint, '_blank');
+  window.open('https://drive.google.com/drive/folders/');
+
 };
 
 // bink event to the sidekick button
