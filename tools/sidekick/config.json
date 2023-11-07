@@ -2,7 +2,7 @@
   "plugins": [
     {
       "id": "openDrive",
-      "title": "Google Drive",
+      "title": "openDrive",
       "event": "openDrive"
     }
   ]
