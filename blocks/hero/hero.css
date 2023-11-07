@@ -21,6 +21,13 @@ main .hero h1 {
   color: white;
 }
 
+main .hero h2 {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  color: red;
+}
+
 main .hero picture {
   position: absolute;
   z-index: -1;
