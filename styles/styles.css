@@ -1,220 +1,147 @@
-/*
- * Copyright 2020 Adobe. All rights reserved.
- * This file is licensed to you under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License. You may obtain a copy
- * of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under
- * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
- * OF ANY KIND, either express or implied. See the License for the specific language
- * governing permissions and limitations under the License.
- */
+:root {
+  /* dimensions */
+  --base-unit: 0.625em; /* ^= 10px; */
+  --nav-height: 177px;
+  --content-width: 1000px;
 
- :root {
   /* colors */
-  --link-color: #035fe6;
-  --link-hover-color: #136ff6;
-  --background-color: yellow ;
-  --overlay-background-color: #eee;
-  --highlight-background-color: #ccc;
-  --text-color: #000;
+  --color-light: #fafafa;
+  --color-dark: #333;
+  --color-medium-dark-gray: #999;
+  --color-medium-gray: #666;
+  --color-light-gray: #ccc;
+  --color-font: #333;
+  --color-highlight-1: #00a0ee;
+  --color-highlight-2: #66cef5;
+  --color-cta: #00a0ee;
 
   /* fonts */
-  --body-font-family: roboto, roboto-fallback;
-  --heading-font-family: var(--body-font-family);
-  --fixed-font-family: 'Roboto Mono', menlo, consolas, 'Liberation Mono', monospace;
+  --font-bold: "SignikaBold", "ArialBoldFallback", "ArialFallback", arial, sans-serif;
+  --font-semi: "SignikaSemibold", "ArialBoldFallback", "ArialFallback", arial, sans-serif;
+  --font-light: "SignikaLight", "ArialFallback", arial, sans-serif;
+  --font-regular: "SignikaRegular", "ArialFallback", arial, sans-serif;
 
-  /* body sizes */
-  --body-font-size-m: 22px;
-  --body-font-size-s: 18px;
-  --body-font-size-xs: 16px;
-
-  /* heading sizes */
-  --heading-font-size-xxl: 48px;
-  --heading-font-size-xl: 40px;
-  --heading-font-size-l: 32px;
-  --heading-font-size-m: 24px;
-  --heading-font-size-s: 20px;
-  --heading-font-size-xs: 18px;
-
-  /* nav height */
-  --nav-height: 64px;
-
+  /*
+  --break-small: 320px;
+  --break-medium: 600px;
+  --break-large: 799px;
+  */
 }
 
 @font-face {
-  font-family: roboto-fallback;
-  size-adjust: 100.06%;
-  ascent-override: 95%;
-  src: local('Arial');
+  font-family: ArialBoldFallback;
+  src: local(arial bold);
+  size-adjust: 94%;
+  ascent-override: 92%;
+  descent-override: 26%;
+  line-gap-override: 10.25%;
 }
 
+@font-face {
+  font-family: ArialFallback;
+  src: local(arial);
+  size-adjust: 94%;
+  ascent-override: 92%;
+  descent-override: 26%;
+  line-gap-override: 10.25%;
+}
 
-@media (min-width: 900px) {
-  :root {
-    --heading-font-size-xxl: 60px;
-    --heading-font-size-xl: 48px;
-    --heading-font-size-l: 36px;
-    --heading-font-size-m: 30px;
-    --heading-font-size-s: 24px;
-    --heading-font-size-xs: 22px;
-  }
+@font-face {
+  font-family: SignikaLight;
+  src: url("/resources/font/Signika-Light-webfont.woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: optional;
+}
+
+@font-face {
+  font-family: SignikaRegular;
+  src: url("/resources/font/Signika-Regular-webfont.woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: optional;
+}
+
+@font-face {
+  font-family: SignikaSemibold;
+  src: url("/resources/font/Signika-Semibold-webfont.woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: optional;
+}
+
+@font-face {
+  font-family: SignikaBold;
+  src: url("/resources/font/Signika-Bold-webfont.woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: optional;
 }
 
 body {
-  font-size: var(--body-font-size-m);
-  margin: 0;
-  font-family: var(--body-font-family);
-  line-height: 1.6;
-  color: var(--text-color);
-  background-color: var(--background-color);
+  background-color: var(--color-light);
+  color: var(--color-dark);
+  font-family: var(--font-light);
+  margin: 0 auto;
+  overflow-y: scroll;
   display: none;
 }
 
 body.appear {
-  display: block;
+  display: unset;
 }
 
-header {
-  height: var(--nav-height);
+/* --- basic styling --- */
+html {
+  box-sizing: border-box;
 }
 
-h1, h2, h3,
-h4, h5, h6 {
-  font-family: var(--heading-font-family);
-  font-weight: 600;
-  line-height: 1.25;
-  margin-top: 1em;
-  margin-bottom: .5em;
-  scroll-margin: calc(var(--nav-height) + 1em);
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
 }
 
-h1 { font-size: var(--heading-font-size-xxl) }
-h2 { font-size: var(--heading-font-size-xl) }
-h3 { font-size: var(--heading-font-size-l) }
-h4 { font-size: var(--heading-font-size-m) }
-h5 { font-size: var(--heading-font-size-s) }
-h6 { font-size: var(--heading-font-size-xs) }
-
-p, dl, ol, ul, pre, blockquote {
-  margin-top: 1em;
-  margin-bottom: 1em;
+p,
+li {
+  line-height: 1.6em;
 }
 
-hr {
-  margin-top: 1.5em;
-  margin-bottom: 1.5em;
-  border: 0;
-  border-bottom: 1px solid var(--overlay-background-color);
+ul {
+  padding-left: calc(2 * var(--base-unit));
 }
 
-code, pre, samp {
-  font-family: var(--fixed-font-family);
-  font-size: var(--body-font-size-s);
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-semi);
+  font-weight: normal;
 }
 
-code, samp {
-  padding: .125em;
+img {
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
 }
 
-pre {
-  overflow: scroll;
-}
-
-main pre {
-  background-color: var(--overlay-background-color);
-  padding: 1em;
-  border-radius: .25em;
-  overflow-x: auto;
-  white-space: pre;
-}
-
-a:any-link {
-  color: var(--link-color);
+a:link {
+  color: var(--color-cta);
   text-decoration: none;
+}
+
+a:visited {
+  color: var(--color-cta);
 }
 
 a:hover {
   text-decoration: underline;
-  color: var(--link-hover-color);
 }
 
-/* buttons */
-a.button:any-link, button {
-  font-family: var(--body-font-family);
-  display: inline-block;
-  box-sizing: border-box;
-  text-decoration: none;
-  border: 2px solid transparent;
-  padding: 5px 30px;
-  text-align: center;
-  font-style: normal;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--background-color);
-  background-color: var(--link-color);
-  margin: 16px 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-radius: 15px;
-}
-
-a.button:hover, a.button:focus, button:hover, button:focus  {
-  background-color: var(--link-hover-color);
-  cursor: pointer;
-}
-
-button:disabled, button:disabled:hover {
-  background-color: var(--overlay-background-color);
-  cursor: unset;
-}
-
-a.button.secondary, button.secondary {
-  background-color: unset;
-  border: 2px solid currentcolor;
-  color: var(--text-color)
-}
-
-main input {
-  font-size: 1.25rem;
-  width: 100%;
-  max-width: 50rem;
-  display: block;
-  margin-bottom: 1rem;
-  padding: 0.75rem 0.6rem;
-  border-radius: 0.25rem;
-  box-sizing: border-box;
-  border: 1px solid var(--text-color);
-  color: var(--text-color);
-  background-color: var(--background-color);
-}
-
-main input:hover {
-  border: 1px solid var(--text-color);
-}
-
-main blockquote {
-  font-style: italic;
-  margin: 3rem;
-  text-indent: -1rem;
-  hanging-punctuation: first;
-}
-
-main blockquote p::before {
-  content: "“";
-  line-height: 0;
-}
-
-main blockquote p::after {
-  content: "”";
-  line-height: 0;
-}
-
-main img {
-  max-width: 100%;
-  width: auto;
-  height: auto;
+a:active {
+  text-decoration: underline;
 }
 
 .icon {
@@ -228,24 +155,201 @@ main img {
   width: 100%;
 }
 
-main .section {
-  padding: 64px 16px;
+/* --- header static elements --- */
+header {
+  position: relative;
+  height: var(--nav-height);
+  width: 100%;
+  background-color: #fff;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  background-image: url("/resources/img/header_bg.webp");
 }
 
-@media (min-width: 600px) {
+@media screen and (width <= 320px) {
+  header {
+    height: 110px;
+  }
+}
+
+header .nav-background {
+  position: absolute;
+  background-color: var(--color-highlight-1);
+  top: calc(var(--nav-height) - 36px);
+  height: 36px;
+  width: 100%;
+}
+
+@media screen and (width <= 320px) {
+  header .nav-background {
+    top: 77px;
+  }
+}
+
+header .header-container {
+  margin: 0 auto;
+  max-width: 100%;
+  width: 100%;
+  padding: 0 var(--base-unit) 0;
+}
+
+@media screen and (width <= 320px) {
+  header .header-container {
+    padding: 0;
+  }
+}
+
+@media screen and (width > 799px) {
+  header .header-container {
+    width: var(--content-width);
+  }
+}
+
+header .header-container .logo {
+  background-color: var(--color-dark);
+  padding: var(--base-unit) var(--base-unit) 2em;
+  float: right;
+}
+
+header .header-container .logo div {
+  width: 103px;
+  height: 100px;
+  background: url("/resources/img/logo.svg") 0 0 no-repeat;
+  background-size: 103px 100px;
+  background-repeat: no-repeat;
+}
+
+@media screen and (width <= 320px) {
+  header .header-container .logo div {
+    width: 36px;
+    height: 35px;
+    background-size: 36px 35px;
+  }
+}
+
+/* --- grid layout for main area --- */
+@media screen and (width <= 799px) {
   main .section {
-    padding: 64px 32px;
+    padding: 0 var(--base-unit);
+  }
+
+  main .section.stage-header-section,
+  main .section.teaser-bar-section {
+    padding: 0;
   }
 }
 
-@media (min-width: 900px) {
-  .section > div {
-    max-width: 1200px;
-    margin: auto;
+.content-2col main .section.aside-bar-section {
+  display: flex;
+}
+
+.content-2col main .section.aside-bar-section > div {
+  flex: 1 0;
+}
+
+@media screen and (width > 600px) and (width <= 799px) {
+  main .section.aside-bar-section {
+    display: flex;
+  }
+
+  main .section.aside-bar-section > div {
+    flex: 1 0;
   }
 }
 
-/* section metadata */
-main .section.highlight {
-  background-color: var(--highlight-background-color);
+@media screen and (width > 799px) {
+  main {
+    display: grid;
+    grid-template-columns: 0 repeat(4, 25%) 0;
+    grid-template-rows: auto;
+  }
+
+  /* assign no row - there may be multiple "default content" sections, the aide bar flows parallel to all of them */
+  main .section {
+    grid-column: 2 / 6;
+    padding: 0 var(--base-unit);
+  }
+
+  .content-3col main .section {
+    grid-column: 2 / 5;
+  }
+
+  .content-2col main .section {
+    grid-column: 2 / 4;
+  }
+
+  main .section.stage-header-section {
+    grid-column: 2 / 6;
+    grid-row: 1;
+    padding: 0;
+  }
+
+  main .section.aside-bar-section {
+    grid-column: 5 / 6;
+    grid-row: 2 / 999;
+  }
+
+  .content-2col main .section.aside-bar-section {
+    grid-column: 4 / 6;
+  }
+
+  main .section.teaser-bar-section {
+    grid-column: 2 / 6;
+    padding: 0;
+  }
+}
+
+@media screen and (width > 1000px) {
+  main {
+    grid-template-columns: 1fr repeat(4, 250px) 1fr;
+  }
+}
+
+/* UserCentrics consent message */
+main .usercentrics-consent-dialog {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  border: 10px solid lightgray;
+  background-color: #fff;
+  padding: 20px;
+  overflow: auto;
+}
+
+main .usercentrics-consent-dialog h3 {
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+main .usercentrics-consent-dialog p {
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+main .usercentrics-consent-dialog button {
+  display: block;
+  width: 180px;
+  margin: 5px;
+  padding: 10px;
+  border: 0;
+  font-family: var(--font-bold);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+main .usercentrics-consent-dialog button.more-info {
+  background-color: lightgray;
+}
+
+main .usercentrics-consent-dialog button.accept {
+  color: #fff;
+  background-color: var(--color-cta);
+}
+
+main .usercentrics-loading-spinner {
+  width: 100%;
+  height: 100%;
 }
