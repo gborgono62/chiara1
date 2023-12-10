@@ -5,5 +5,13 @@
       "title": "openDrive",
       "event": "openDrive"
     }
+    {
+      "id": "generate-variations",
+      "title": "Generate Variations",
+      "url": "https://experience.adobe.com/aem/generate-variations",
+      "passConfig": true,
+      "environments": ["preview","live", "edit"],
+      "includePaths": ["**.docx**"]
+    }
   ]
 }
