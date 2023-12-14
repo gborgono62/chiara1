@@ -14,6 +14,16 @@ import {
 } from './lib-franklin.js';
 
 const LCP_BLOCKS = []; // add your LCP blocks to the list
+// Define an execution context
+const pluginContext = {
+  getAllMetadata,
+  getMetadata,
+  loadCSS,
+  loadScript,
+  sampleRUM,
+  toCamelCase,
+  toClassName,
+};
 
 /**
  * added borgo x generative experiment AI 
@@ -40,16 +50,6 @@ export function getAllMetadata(scope) {
     }, {});
 }
 
-// Define an execution context
-const pluginContext = {
-  getAllMetadata,
-  getMetadata,
-  loadCSS,
-  loadScript,
-  sampleRUM,
-  toCamelCase,
-  toClassName,
-};
 // inclusion of Generative code AI by borgo END 
 /**
  * Builds hero block and prepends to main in a new section.
