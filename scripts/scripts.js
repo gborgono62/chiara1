@@ -11,12 +11,15 @@ import {
   waitForLCP,
   loadBlocks,
   loadCSS,
+  getMetadata,
+  loadScript,
 } from './lib-franklin.js';
 
 const LCP_BLOCKS = []; // add your LCP blocks to the list
 // Define an execution context
 const pluginContext = {
   getAllMetadata,
+  getMetadata,
   loadCSS,
   loadScript,
   sampleRUM,
