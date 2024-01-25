@@ -1,67 +1,968 @@
 <!DOCTYPE html>
-<html>
+<!-- saved from url=(0034)https://blog.adobe.com/doesntexist -->
+<html lang="en-US" dir="ltr"><script>(function() {
+		window.addEventListener('message', function(event) {
+			if (
+				event.data &&
+				event.data.id &&
+				typeof event.data.id.startsWith === 'function' &&
+				event.data.id.startsWith('adobeExperienceCloudDebuggerContentMessagingIdentifier-')
+			) {
+				event.stopImmediatePropagation();
+			}
+		},
+		{capture: true});
+	})();</script><script>
+		(function() {
+			const contentScriptEventTrigger = function(data) {
+				window.postMessage({ id:'adobeExperienceCloudDebuggerContentMessagingIdentifier-1', data: data });
+			}
+			const DATA_LAYER_LOCAL_STORAGE_KEY =
+  "com.adobe.experiencePlatformDebugger.dataLayer.key";
+const dataLayerKey = window.localStorage.getItem(DATA_LAYER_LOCAL_STORAGE_KEY);
 
-<head>
-  <title>Page not found</title>
-  <script type="text/javascript">
-    window.isErrorPage = true;
-    window.errorCode = '404';
-  </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta property="og:title" content="Page not found">
-  <script src="/scripts/scripts.js" type="module" crossorigin="use-credentials"></script>
-  <script type="module">
-    import { sampleRUM } from '/scripts/lib-franklin.js';
+if (dataLayerKey) {
+  // sindresorhus/on-change
+  // MIT - License
+  // https://github.com/sindresorhus/on-change
+  const PATH_SEPARATOR = ".";
+  const TARGET = Symbol("target");
+  const UNSUBSCRIBE = Symbol("unsubscribe");
 
-    window.addEventListener('load', () => {
-      if (document.referrer) {
-        const { origin, pathname } = new URL(document.referrer);
-        if (origin === window.location.origin) {
-          const backBtn = document.createElement('a');
-          backBtn.classList.add('button', 'error-button-back');
-          backBtn.href = pathname;
-          backBtn.textContent = 'Go back';
-          backBtn.title = 'Go back';
-          const btnContainer = document.querySelector('.button-container');
-          btnContainer.append(backBtn);
+  const isPrimitive = value =>
+    value === null ||
+    (typeof value !== "object" && typeof value !== "function");
+
+  const isBuiltinWithoutMutableMethods = value =>
+    value instanceof RegExp || value instanceof Number;
+
+  const isBuiltinWithMutableMethods = value => value instanceof Date;
+
+  const concatPath = (path, property) => {
+    let ret = path;
+    if (property && property.toString) {
+      if (path) {
+        ret += PATH_SEPARATOR;
+      }
+
+      ret += property.toString();
+    }
+
+    return ret;
+  };
+
+  const walkPath = (path, callback) => {
+    let index;
+    let remainingPath = path;
+    while (remainingPath) {
+      index = remainingPath.indexOf(PATH_SEPARATOR);
+
+      if (index === -1) {
+        index = remainingPath.length;
+      }
+
+      callback(remainingPath.slice(0, index));
+
+      remainingPath = remainingPath.slice(index + 1);
+    }
+  };
+
+  const shallowClone = value => {
+    if (Array.isArray(value)) {
+      return value.slice();
+    }
+
+    return { ...value };
+  };
+
+  const onChange = (object, updateDataLayer, options = {}) => {
+    const proxyTarget = Symbol("ProxyTarget");
+    let inApply = false;
+    let changed = false;
+    let applyPath;
+    let applyPrevious;
+    let isUnsubscribed = false;
+    const equals = options.equals || Object.is;
+    let propCache = new WeakMap();
+    let pathCache = new WeakMap();
+    let proxyCache = new WeakMap();
+    let boundUpdateDataLayer;
+
+    const handleChange = (path, property, previous, value) => {
+      if (isUnsubscribed) {
+        return;
+      }
+
+      if (!inApply) {
+        boundUpdateDataLayer(concatPath(path, property), value, previous);
+        return;
+      }
+
+      if (
+        inApply &&
+        applyPrevious &&
+        previous !== undefined &&
+        value !== undefined &&
+        property !== "length"
+      ) {
+        let item = applyPrevious;
+
+        if (path !== applyPath) {
+          const appliedPath = path.replace(applyPath, "").slice(1);
+
+          walkPath(appliedPath, key => {
+            item[key] = shallowClone(item[key]);
+            item = item[key];
+          });
+        }
+
+        item[property] = previous;
+      }
+
+      changed = true;
+    };
+
+    const getOwnPropertyDescriptor = (target, property) => {
+      let props = propCache ? propCache.get(target) : undefined;
+
+      if (props) {
+        return props;
+      }
+
+      props = new Map();
+      propCache.set(target, props);
+
+      let prop = props.get(property);
+      if (!prop) {
+        prop = Reflect.getOwnPropertyDescriptor(target, property);
+        props.set(property, prop);
+      }
+
+      return prop;
+    };
+
+    const invalidateCachedDescriptor = (target, property) => {
+      const props = propCache ? propCache.get(target) : undefined;
+
+      if (props) {
+        props.delete(property);
+      }
+    };
+
+    const buildProxy = (value, path) => {
+      if (isUnsubscribed) {
+        return value;
+      }
+
+      pathCache.set(value, path);
+
+      let proxy = proxyCache.get(value);
+
+      if (proxy === undefined) {
+        proxy = new Proxy(value, handler);
+        proxyCache.set(value, proxy);
+      }
+
+      return proxy;
+    };
+
+    const unsubscribe = target => {
+      isUnsubscribed = true;
+      propCache = null;
+      pathCache = null;
+      proxyCache = null;
+
+      return target;
+    };
+
+    const ignoreChange = property =>
+      isUnsubscribed ||
+      (options.ignoreSymbols === true && typeof property === "symbol");
+
+    const handler = {
+      get(target, property, receiver) {
+        if (property === proxyTarget || property === TARGET) {
+          return target;
+        }
+
+        if (property === UNSUBSCRIBE && pathCache.get(target) === "") {
+          return unsubscribe(target);
+        }
+
+        const value = Reflect.get(target, property, receiver);
+        if (
+          isPrimitive(value) ||
+          isBuiltinWithoutMutableMethods(value) ||
+          property === "constructor" ||
+          options.isShallow === true
+        ) {
+          return value;
+        }
+
+        // Preserve invariants
+        const descriptor = getOwnPropertyDescriptor(target, property);
+        if (descriptor && !descriptor.configurable) {
+          if (descriptor.set && !descriptor.get) {
+            return undefined;
+          }
+
+          if (descriptor.writable === false) {
+            return value;
+          }
+        }
+
+        return buildProxy(value, concatPath(pathCache.get(target), property));
+      },
+
+      set(target, property, value, receiver) {
+        const proxyTargetValue =
+          value && value[proxyTarget] !== undefined
+            ? value[proxyTarget]
+            : value;
+
+        const ignore = ignoreChange(property);
+        const previous = ignore
+          ? null
+          : Reflect.get(target, property, receiver);
+        const result = Reflect.set(
+          target[proxyTarget] || target,
+          property,
+          proxyTargetValue
+        );
+
+        if (!ignore && !equals(previous, proxyTargetValue)) {
+          handleChange(
+            pathCache.get(target),
+            property,
+            previous,
+            proxyTargetValue
+          );
+        }
+
+        return result;
+      },
+
+      defineProperty(target, property, descriptor) {
+        const result = Reflect.defineProperty(target, property, descriptor);
+
+        if (!ignoreChange(property)) {
+          invalidateCachedDescriptor(target, property);
+
+          handleChange(
+            pathCache.get(target),
+            property,
+            undefined,
+            descriptor.value
+          );
+        }
+
+        return result;
+      },
+
+      deleteProperty(target, property) {
+        if (!Reflect.has(target, property)) {
+          return true;
+        }
+
+        const ignore = ignoreChange(property);
+        const previous = ignore ? null : Reflect.get(target, property);
+        const result = Reflect.deleteProperty(target, property);
+
+        if (!ignore) {
+          invalidateCachedDescriptor(target, property);
+
+          handleChange(pathCache.get(target), property, previous);
+        }
+
+        return result;
+      },
+
+      apply(target, thisArg, argumentsList) {
+        const compare = isBuiltinWithMutableMethods(proxyTargetThisArg);
+
+        const proxyTargetThisArg = compare ? thisArg[proxyTarget] : thisArg;
+
+        if (!inApply) {
+          inApply = true;
+
+          if (compare) {
+            applyPrevious = proxyTargetThisArg.valueOf();
+          }
+
+          if (
+            Array.isArray(proxyTargetThisArg) ||
+            toString.call(proxyTargetThisArg) === "[object Object]"
+          ) {
+            applyPrevious = shallowClone(proxyTargetThisArg[proxyTarget]);
+          }
+
+          applyPath = pathCache.get(target);
+          applyPath = applyPath.slice(
+            0,
+            Math.max(applyPath.lastIndexOf(PATH_SEPARATOR), 0)
+          );
+
+          const result = Reflect.apply(
+            target,
+            proxyTargetThisArg,
+            argumentsList
+          );
+
+          inApply = false;
+
+          if (
+            changed ||
+            (compare && !equals(applyPrevious, proxyTargetThisArg.valueOf()))
+          ) {
+            handleChange(
+              applyPath,
+              "",
+              applyPrevious,
+              proxyTargetThisArg[proxyTarget] || proxyTargetThisArg
+            );
+            applyPrevious = null;
+            changed = false;
+          }
+
+          return result;
+        }
+
+        return Reflect.apply(target, proxyTargetThisArg, argumentsList);
+      }
+    };
+
+    const proxy = buildProxy(object, "");
+    boundUpdateDataLayer = updateDataLayer.bind(proxy);
+
+    return proxy;
+  };
+
+  onChange.target = proxy => proxy[TARGET] || proxy;
+  onChange.unsubscribe = proxy => proxy[UNSUBSCRIBE] || proxy;
+
+  let proxy;
+  let previousDataLayer;
+
+  const _serialize = dataLayer => {
+    try {
+      return JSON.stringify({ ...dataLayer }, null, 2);
+    } catch (e) {
+      return JSON.stringify(dataLayer, null, 2);
+    }
+  };
+
+  const _notify = dataLayer => {
+    contentScriptEventTrigger({
+      data: {
+        dataLayer
+      },
+      timestamp: Date.now(),
+      timeSincePageLoad: window.performance.now()
+    });
+  };
+
+  const onDataLayerUpdate = () => {
+    const dataLayer = _serialize(this);
+
+    if (previousDataLayer !== dataLayer) {
+      previousDataLayer = dataLayer;
+      _notify(dataLayer);
+    }
+  };
+
+  const onDataLayerSet = newDataLayer => {
+    const dataLayer = _serialize(newDataLayer);
+    if (!previousDataLayer || previousDataLayer !== dataLayer) {
+      previousDataLayer = dataLayer;
+      _notify(dataLayer);
+    }
+  };
+
+  Object.defineProperty(window, dataLayerKey, {
+    get() {
+      return proxy;
+    },
+    set(newDataLayer) {
+      onDataLayerSet(newDataLayer);
+      proxy = onChange(newDataLayer, onDataLayerUpdate);
+    },
+    enumerable: true,
+    configurable: true
+  });
+
+  const oldObjectDefine = Object.defineProperty.bind(Object);
+  Object.defineProperty = (obj, prop, descriptor) => {
+    if (prop === dataLayerKey) {
+      console.debug(
+        "Data layer being overwritten by Object.defineProperty(). Falling back to polling..."
+      );
+
+      const pollForChanges = () => {
+        const dataLayer = _serialize(window[dataLayerKey]);
+        if (previousDataLayer !== dataLayer) {
+          previousDataLayer = dataLayer;
+          _notify(dataLayer);
+        }
+        window.requestAnimationFrame(pollForChanges);
+      };
+
+      window.requestAnimationFrame(pollForChanges);
+    }
+    return oldObjectDefine(obj, prop, descriptor);
+  };
+}
+
+		})();
+	</script><script>
+		(function() {
+			const contentScriptEventTrigger = function(data) {
+				window.postMessage({ id:'adobeExperienceCloudDebuggerContentMessagingIdentifier-2', data: data });
+			}
+			// https://github.com/adobe/alloy/wiki/Monitoring-Hooks
+
+// This script is run within an immediately executed function, so variables declared here
+// are local to this script only.
+const orgIdsByInstanceName = {};
+
+window.__alloyMonitors = window.__alloyMonitors || [];
+window.__alloyMonitors.push({
+  onBeforeNetworkRequest(data) {
+    setTimeout(() => {
+      contentScriptEventTrigger({
+        name: "onAlloyNetworkRequest",
+        data: {
+          ...data,
+          orgId: orgIdsByInstanceName[data.instanceName]
+        }
+      });
+    });
+  },
+  onNetworkResponse(data) {
+    // There are fields in data that don't serialize well, so we only include parsedBody
+    setTimeout(() => {
+      contentScriptEventTrigger({
+        name: "onAlloyNetworkResponse",
+        data: {
+          parsedBody: data.parsedBody,
+          orgId: orgIdsByInstanceName[data.instanceName]
+        }
+      });
+    });
+  },
+  onNetworkError(data) {
+    setTimeout(() => {
+      contentScriptEventTrigger({ name: "onAlloyNetworkError", data });
+    });
+  },
+  onInstanceConfigured(data) {
+    // We keep a cache of orgIdsByInstanceNames here because the response to getLibraryInfo
+    // may happen after a network request already occurred.
+    orgIdsByInstanceName[data.instanceName] = data.config.orgId;
+    setTimeout(() => {
+      window[data.instanceName]("getLibraryInfo").then(({ libraryInfo }) => {
+        // The configuration section uses debugEnabled to know the initial state
+        const debugEnabledSessionStorage = window.sessionStorage.getItem(
+          `com.adobe.alloy.instance.${data.instanceName}.debug`
+        );
+        const debugEnabled =
+          debugEnabledSessionStorage === "true" ||
+          (data.config.debugEnabled && debugEnabledSessionStorage === null);
+
+        contentScriptEventTrigger({
+          name: "onInstanceConfigured",
+          data: {
+            namespace: data.instanceName,
+            edgeConfigId: data.config.datastreamId ?? data.config.edgeConfigId,
+            edgeDomain: data.config.edgeDomain,
+            orgId: data.config.orgId,
+            // we only use the version (for now), so we don't need to send anything else.
+            libraryInfo: {
+              version: libraryInfo.version
+            },
+            debugEnabled
+          }
+        });
+      });
+    });
+  }
+});
+
+		})();
+	</script><script>
+		(function() {
+			const contentScriptEventTrigger = function(data) {
+				window.postMessage({ id:'adobeExperienceCloudDebuggerContentMessagingIdentifier-3', data: data });
+			}
+			/**
+ * Hooks into both DTM's and Launch's logging mechanisms in order to capture all log messages and
+ * send them to the UI to display to the user
+ */
+function notifyContentScript(log) {
+  contentScriptEventTrigger({
+    data: log,
+    timestamp: Date.now(),
+    timeSincePageLoad: window.performance.now()
+  });
+}
+
+// Create a stub _satellite with the common methods. Without this, this injected script will
+// break pages that have logic on them like "window._satellite && window._satellite.pageBottom()"
+const noop = () => {};
+const satelliteStub = {};
+[
+  "getVar",
+  "getVisitorId",
+  "notify",
+  "pageBottom",
+  "readCookie",
+  "setCookie",
+  "setDebug",
+  "setVar",
+  "track"
+].forEach(prop => {
+  satelliteStub[prop] = noop;
+});
+
+window._satellite = {
+  ...satelliteStub,
+  ...window._satellite
+};
+window._satellite.override = window._satellite.override || {};
+
+// Hook into _satellite in order to capture DTM logs
+if (window.Object && window.Object.defineProperty) {
+  window.Object.defineProperty(
+    window._satellite.override,
+    "adobe.aepDebugger.dtmInitHook",
+    {
+      enumerable: true,
+      get() {
+        onSatelliteInit();
+        return "";
+      },
+      set() {}
+    }
+  );
+}
+
+function onSatelliteInit() {
+  // This function will run when DTM is loaded on the page. We use it to hook into DTM logs
+  const { _satellite } = window;
+  if (_satellite.Logger) {
+    _satellite.Logger.keepLimit = 9999;
+  }
+
+  // override notify
+  // Reason: we want to intercept messages that go through here
+  // without worrying about limits or messing anything up internally
+  const originalNotify = _satellite.notify;
+  _satellite.notify = (message, level) => {
+    const logLevel = ["log", "log", "log", "info", "warn", "error"];
+
+    // call original
+    originalNotify(message, level);
+
+    const log = {
+      solution: "dtm",
+      solutions: ["dtm"],
+      level: logLevel[level] || "log",
+      message: ""
+    };
+
+    // make sure that we have a message
+    if (message && typeof message === "string") {
+      // only add it
+      log.message = message;
+
+      // check to see what solution it came from
+      if (message.indexOf("Adobe Analytics:") !== -1) {
+        log.solutions.push("analytics");
+      } else if (message.indexOf("Test & Target:") !== -1) {
+        log.solutions.push("target");
+      } else if (message.indexOf("Visitor ID:") !== -1) {
+        log.solutions.push("visitorService");
+      } else if (message.indexOf("AdLens:") !== -1) {
+        log.solutions.push("mediaOptimizer");
+      }
+    }
+    notifyContentScript(log);
+  };
+}
+
+function _overrideConsoleLogFunction(prefix, solution, level) {
+  const originalFunction = console[level];
+  console[level] = (...args) => {
+    const argsAsArray = Array.prototype.slice.call(args);
+    originalFunction.apply(console, argsAsArray);
+    const mappedArgs = argsAsArray.map(arg => {
+      let result = "";
+      if (arg && typeof arg.toString === "function") {
+        result = arg.toString();
+      }
+      if (!result || result === "[object Object]") {
+        try {
+          result = JSON.stringify(arg);
+        } catch (e) {
+          return "";
         }
       }
-      sampleRUM('404', { source: document.referrer, target: window.location.href });
+      return result;
     });
-  </script>
-  <link rel="stylesheet" href="/styles/styles.css">
-  <style>
-    main.error {
-      min-height: calc(100vh - var(--nav-height));
-      display: flex;
-      align-items: center;
-    }
 
-    main.error .error-number {
-      width: 100%;
-    }
+    const message = mappedArgs.join(" ");
 
-    main.error .error-number text {
-      font-family: var(--fixed-font-family);
-    }
-  </style>
-  <link rel="stylesheet" href="/styles/lazy-styles.css">
-</head>
+    if (typeof message === "string") {
+      if (message.indexOf(prefix) === 0) {
+        const log = {
+          solution,
+          solutions: [solution],
+          level,
+          message,
+          searchIndex: message,
+          params: mappedArgs
+        };
 
-<body>
-  <header></header>
-  <main class="error">
-    <div class="section">
-      <svg viewBox="1 0 38 18" class="error-number">
-        <text x="0" y="17">404</text>
-      </svg>
-      <h2 class="error-message">Page Not Found</h2>
-      <p class="button-container">
-        <a href="/" class="button secondary error-button-home">Go home</a>
-      </p>
+        // check to see what solution it came from
+        if (message.indexOf("[Adobe Analytics]") !== -1) {
+          log.solutions.push("analytics");
+        } else if (message.indexOf("[Adobe Target]") !== -1) {
+          log.solutions.push("target");
+        } else if (message.indexOf("[Experience Cloud ID Service]") !== -1) {
+          log.solutions.push("visitorService");
+        } else if (message.indexOf("[Adobe Media Optimizer]") !== -1) {
+          log.solutions.push("mediaOptimizer");
+        }
+        notifyContentScript(log);
+      }
+    }
+  };
+}
+
+/**
+ * Overrides the various console.* methods in order to intercept messages that
+ * are sent to the console by launch. A message was sent be launch if it starts
+ * with the rocket emoji 🚀. Note that this is a somewhat brittle solution
+ * since if the emoji ever changes this integration will break. However this
+ * is the only solution that works for now.
+ *
+ * Any messages that are not prefixed with the rocket emoji are ignored and passed
+ * through to the original console function
+ */
+function _overrideConsoleForLaunch() {
+  const prefix = "🚀";
+  ["error", "info", "log", "warn"].forEach(
+    _overrideConsoleLogFunction.bind(null, prefix, "launch")
+  );
+}
+
+/**
+ * Intercepts console messages made by alloy (prefixed with [alloy]) and notifies content script about each one.
+ * Note that this is a brittle solution and should not be used long term.
+ *
+ * Ideally there will be some debugging hooks built into alloy itself that we can connect to
+ */
+function _overrideConsoleForAlloy() {
+  window.__alloyNS = [];
+  const originalPush = window.__alloyNS.push;
+  window.__alloyNS.push = (namespace, ...rest) => {
+    ["error", "info", "log", "warn"].forEach(
+      _overrideConsoleLogFunction.bind(null, `[${namespace}]`, "alloy")
+    );
+
+    originalPush.apply(
+      window.__alloyNS,
+      Array.prototype.slice.call([namespace, ...rest])
+    );
+  };
+}
+
+/**
+ * Overrides console.debug and console.warn methods in order to intercept messages that
+ * are sent to the console by at.js. A message was sent be at.js if it starts
+ * with "AT:".
+ *
+ * Note that this is a somewhat brittle solution
+ * since if the prefix ever changes this integration will break. However this
+ * is the only solution that works for now, since at.js does not have any debugging hooks.
+ * If this ever breaks, the first place to look is at the logger implementation in at.js
+ * to see if they changed the prefix or started using different console functions. Check
+ * https://git.corp.adobe.com/TnT/atjs-library-v2/blob/master/src/delivery/monitoring/logger/helper.js
+ *
+ * Any messages that are not prefixed with "AT:" are ignored and passed
+ * through to the original console function
+ */
+function _overrideConsoleForAtJs() {
+  const prefix = "AT:";
+  ["debug", "warn"].forEach(
+    _overrideConsoleLogFunction.bind(null, prefix, "target")
+  );
+}
+
+_overrideConsoleForLaunch();
+_overrideConsoleForAlloy();
+_overrideConsoleForAtJs();
+
+// Once the page has finished loading, remove _satellite if both DTM and Launch were not found
+window.addEventListener("load", () => {
+  if (!_hasDtm() && !_hasLaunch()) {
+    delete window._satellite;
+  }
+});
+
+/**
+ * @returns {boolean} whether launch is present on the page
+ */
+function _hasLaunch() {
+  return !!(window._satellite && window._satellite._container);
+}
+
+/**
+ * @returns {boolean} whether DTM is present on the page
+ */
+function _hasDtm() {
+  return !!(window._satellite && window._satellite.configurationSettings);
+}
+
+		})();
+	</script><script>
+		(function() {
+			const contentScriptEventTrigger = function(data) {
+				window.postMessage({ id:'adobeExperienceCloudDebuggerContentMessagingIdentifier-4', data: data });
+			}
+			window.___target_traces = window.___target_traces || [];
+const originalPush = window.___target_traces.push;
+
+window.___target_traces.push = function targetTracePush(trace) {
+  contentScriptEventTrigger({ trace });
+  originalPush.call(this, trace);
+};
+
+		})();
+	</script><script src="chrome-extension://ejdcnikffjleeffpigekhccpepplaode/aem-chrome-plugin--adaptive-form--custom-script.js"></script><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>404</title>
+    <meta name="template" content="404">
+    <meta name="404" content="local">
+    <meta name="footer" content="global-footer">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="./404_files/scripts.js.download" type="module"></script>
+    <link rel="icon" href="https://blog.adobe.com/img/favicons/favicon.ico"><link rel="apple-touch-icon" href="https://blog.adobe.com/img/favicons/favicon-180.png">
+                <link rel="manifest" href="https://blog.adobe.com/img/favicons/favicon.webmanifest">
+    <link rel="stylesheet" href="./404_files/styles.css"><link rel="stylesheet" href="./404_files/styles(1).css"><script src="./404_files/imslib.min.js.download" data-loaded="true"></script><link rel="stylesheet" href="./404_files/gnav.css"><link rel="stylesheet" href="./404_files/global-footer.css"><link rel="preload" as="script" href="./404_files/launch-5dd5dd2177e6.min.js.download"><script src="./404_files/martech.main.standard.min.js.download" data-loaded="true"></script><script src="./404_files/launch-5dd5dd2177e6.min.js.download" async=""></script><link rel="stylesheet" href="./404_files/404.css"><link rel="stylesheet" href="./404_files/base.css"><link rel="stylesheet" href="./404_files/hah7vzn.css"><link rel="stylesheet" href="./404_files/fragment.css"><link rel="stylesheet" href="./404_files/columns.css"><link rel="stylesheet" href="./404_files/section-metadata.css"><link rel="modulepreload" as="script" href="https://blog.adobe.com/libs/features/personalization/entitlements.js"><script src="./404_files/RC7de299e2b0fd49e1a6b70472f1c21dc4-file.min.js.download" async=""></script><script src="./404_files/privacy-standalone.js.download" data-loaded="true"></script></head>
+  <body data-mep="nopzn|nopzn" class="404">
+    <header class="gnav" daa-im="true" daa-lh="gnav|theblog-helix"><div class="gnav-curtain"></div><div class="gnav-wrapper"><nav class="gnav signed-in" aria-label="Main"><button class="gnav-toggle" aria-label="Navigation menu" aria-expanded="false"></button><a href="https://blog.adobe.com/" class="gnav-brand no-logo" aria-label="Adobe Blog" daa-ll="Brand"><span class="gnav-brand-title">Adobe Blog</span></a><div class="mainnav-wrapper"><div class="gnav-mainnav"><div class="gnav-navitem has-menu"><a href="https://blog.adobe.com/en/topics/news" role="button" aria-expanded="false" aria-controls="navmenu-0" daa-ll="News" daa-lh="header|Open">News</a><div id="navmenu-0" class="gnav-navitem-menu small-Variant" daa-lh="header|News">
+  
+  <ul>
+    <li><a href="https://blog.adobe.com/en/topics/news" daa-ll="Product_and_company_updates-1">Product and company updates</a></li>
+    <li><a href="https://news.adobe.com/home/default.aspx" daa-ll="Adobe_press_releases-2">Adobe press releases</a></li>
+  </ul>
+</div></div><div class="gnav-navitem has-menu"><a href="https://blog.adobe.com/" role="button" aria-expanded="false" aria-controls="navmenu-1" daa-ll="Insights &amp; Inspiration" daa-lh="header|Open">Insights &amp; Inspiration</a><div id="navmenu-1" class="gnav-navitem-menu medium-Variant" daa-lh="header|Insights &amp; Inspiration">
+  
+  <ul>
+    <li><a href="https://blog.adobe.com/en/topics/creativity" daa-ll="Creativity-1">Creativity</a></li>
+    <li><a href="https://blog.adobe.com/en/topics/digital-transformation" daa-ll="Digital_Transformation-2">Digital Transformation</a></li>
+    <li><a href="https://blog.adobe.com/en/topics/trends--research" daa-ll="Trends_and_Research-3">Trends &amp; Research</a></li>
+    <li><a href="https://blog.adobe.com/en/topics/future-of-work" daa-ll="Future_Of_Work-4">Future Of Work</a></li>
+    <li><a href="https://blog.adobe.com/en/topics/leadership" daa-ll="Leadership-5">Leadership</a></li>
+    <li><a href="https://blog.adobe.com/en/topics/customer-stories" daa-ll="Customer_Stories-6">Customer Stories</a></li>
+    <li><a href="https://blog.adobe.com/en/topics/events" daa-ll="Events-7">Events</a></li>
+  </ul>
+  <div class="gnav-promo card">
+    <div>
+      <div>
+        <p>
+          <picture>
+            <source type="image/webp" srcset="./media_10b26b844ab15139b400d706ad87662f68cfcff2b.png?width=2000&amp;format=webply&amp;optimize=medium" media="(min-width: 600px)">
+            <source type="image/webp" srcset="./media_10b26b844ab15139b400d706ad87662f68cfcff2b.png?width=750&amp;format=webply&amp;optimize=medium">
+            <source type="image/png" srcset="./media_10b26b844ab15139b400d706ad87662f68cfcff2b.png?width=2000&amp;format=png&amp;optimize=medium" media="(min-width: 600px)">
+            <img loading="lazy" alt="" src="./404_files/media_10b26b844ab15139b400d706ad87662f68cfcff2b.png" width="680" height="383">
+          </picture>
+        </p>
+        <p>Adobe MAX 2023 - The Creativity Conference</p>
+        <p>Join us in Los Angeles or attend virtually from anywhere in the world.</p>
+        <p><a href="https://max.adobe.com/" daa-ll="Register_now-4">Register now</a></p>
+      </div>
     </div>
-  </main>
-  <footer></footer>
-</body>
+  </div>
+</div></div><div class="gnav-navitem has-menu"><a href="https://blog.adobe.com/" role="button" aria-expanded="false" aria-controls="navmenu-2" daa-ll="Responsibility" daa-lh="header|Open">Responsibility</a><div id="navmenu-2" class="gnav-navitem-menu small-Variant" daa-lh="header|Responsibility">
+  
+  <ul>
+    <li><a href="https://blog.adobe.com/en/topics/diversity--inclusion" daa-ll="Diversity_and_Inclusion-1">Diversity &amp; Inclusion</a></li>
+    <li><a href="https://blog.adobe.com/en/topics/sustainability" daa-ll="Sustainability-2">Sustainability</a></li>
+    <li><a href="https://blog.adobe.com/en/topics/content-authenticity" daa-ll="Content_Authenticity-3">Content Authenticity</a></li>
+  </ul>
+</div></div><div class="gnav-navitem has-menu"><a href="https://blog.adobe.com/" role="button" aria-expanded="false" aria-controls="navmenu-3" daa-ll="Adobe Life" daa-lh="header|Open">Adobe Life</a><div id="navmenu-3" class="gnav-navitem-menu small-Variant" daa-lh="header|Adobe Life">
+  
+  <ul>
+    <li><a href="https://blog.adobe.com/en/topics/adobe-culture" daa-ll="Adobe_Culture-1">Adobe Culture</a></li>
+    <li><a href="https://blog.adobe.com/en/topics/employee-impact" daa-ll="Employee_Impact-2">Employee Impact</a></li>
+    <li><a href="https://blog.adobe.com/en/topics/university-interns" daa-ll="University-3">University</a></li>
+  </ul>
+</div></div></div><div class="gnav-search contextual"><button class="gnav-search-button" aria-label="Search" aria-expanded="false" aria-controls="gnav-search-bar" daa-ll="Search"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" focusable="false"><path d="M14 2A8 8 0 0 0 7.4 14.5L2.4 19.4a1.5 1.5 0 0 0 2.1 2.1L9.5 16.6A8 8 0 1 0 14 2Zm0 14.1A6.1 6.1 0 1 1 20.1 10 6.1 6.1 0 0 1 14 16.1Z"></path></svg></button><aside id="gnav-search-bar" class="gnav-search-bar"><div class="gnav-search-field"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" focusable="false"><path d="M14 2A8 8 0 0 0 7.4 14.5L2.4 19.4a1.5 1.5 0 0 0 2.1 2.1L9.5 16.6A8 8 0 1 0 14 2Zm0 14.1A6.1 6.1 0 1 1 20.1 10 6.1 6.1 0 0 1 14 16.1Z"></path></svg><input class="gnav-search-input" placeholder="Search" daa-ll="search-results:standard search"></div><div class="gnav-search-results"><ul></ul></div></aside></div></div><div class="gnav-profile"><button class="gnav-profile-button" aria-label="Giuseppe Borgonovo" aria-expanded="false" aria-controls="gnav-profile-menu"><img class="gnav-profile-img" src="./404_files/138"></button><div id="gnav-profile-menu" class="gnav-profile-menu"><a class="gnav-profile-header" href="https://account.adobe.com/" aria-label="View Account"><img class="gnav-profile-img" src="./404_files/138"><div class="gnav-profile-details"><p class="gnav-profile-name">Giuseppe Borgonovo</p><p class="gnav-profile-email">GBORGONO@ADOBE.COM</p><p class="gnav-profile-account">View Account</p></div></a><ul class="gnav-profile-actions"><li class="gnav-profile-action"><a href="https://adminconsole.adobe.com/">Manage Enterprise</a></li><li class="gnav-profile-action"><a href="https://account.adobe.com/">Sign Out</a></li></ul></div></div><a href="https://www.adobe.com/" class="gnav-logo" aria-label="Adobe" daa-ll="Logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 133.46 118.11"><defs><style>.cls-1{fill:#eb1000;}</style></defs><polygon class="cls-1" points="84.13 0 133.46 0 133.46 118.11 84.13 0"></polygon><polygon class="cls-1" points="49.37 0 0 0 0 118.11 49.37 0"></polygon><polygon class="cls-1" points="66.75 43.53 98.18 118.11 77.58 118.11 68.18 94.36 45.18 94.36 66.75 43.53"></polygon></svg></a></nav></div></header>
+    <main daa-im="true"><div class="section" daa-lh="s1"></div><div class="section" daa-lh="s2"><div><div class="fragment" data-path="/fragments/404"><div class="section xl-spacing has-background"><picture class="section-background">
+          <source type="image/webp" srcset="https://blog.adobe.com/fragments/media_1fdf1840b658dfef1c4f5285f0c1fe317a1b771fa.jpeg?width=2000&amp;format=webply&amp;optimize=medium" media="(min-width: 600px)">
+          <source type="image/webp" srcset="https://blog.adobe.com/fragments/media_1fdf1840b658dfef1c4f5285f0c1fe317a1b771fa.jpeg?width=750&amp;format=webply&amp;optimize=medium">
+          <source type="image/jpeg" srcset="https://blog.adobe.com/fragments/media_1fdf1840b658dfef1c4f5285f0c1fe317a1b771fa.jpeg?width=2000&amp;format=jpeg&amp;optimize=medium" media="(min-width: 600px)">
+          <img loading="lazy" alt="" src="./404_files/media_1fdf1840b658dfef1c4f5285f0c1fe317a1b771fa.jpeg" width="1440" height="612">
+        </picture><div class="content" daa-lh="b1|content|nopzn|nopzn"><h1 id="these-are-uncharted-waters">These are uncharted waters.</h1><h3 id="searching-for-something-try-one-of-the-links-below"><em>Searching for something? Try one of the links below</em></h3></div>
+  
+  
+  <div class="columns contained" daa-lh="b2|columns|nopzn|nopzn">
+    <div class="row row-1">
+      <div class="col col-1">
+        <h4 id="adobe-blog">Adobe Blog</h4>
+        <ul>
+          <li><a href="https://blog.adobe.com/" daa-ll="Go to homepage-1--Adobe Blog">Go to homepage ›</a></li>
+          <li><a href="https://adobe.com/search.html" daa-ll="Search Adobe com-2--Adobe Blog">Search Adobe.com ›</a></li>
+        </ul>
+        <h4 id="creative-cloud">Creative Cloud</h4>
+        <ul>
+          <li><a href="https://www.adobe.com/products/catalog.html?promoid=6DWQ7LLX&amp;mv=other" daa-ll="Start your free tria-3--Creative Cloud">Start your free trial</a></li>
+          <li><a href="https://www.adobe.com/creativecloud/plans.html?promoid=P3KMQYMW&amp;mv=other" daa-ll="View plans and prici-4--Creative Cloud">View plans and pricing</a></li>
+        </ul>
+        <h4 id="acrobat">Acrobat</h4>
+        <ul>
+          <li><a href="https://www.adobe.com/acrobat.html?promoid=C12Y324S&amp;mv=other" daa-ll="Get to know Acrobat-5--Acrobat">Get to know Acrobat</a></li>
+          <li><a href="https://www.adobe.com/acrobat/pricing.html?promoid=29NMCP6L&amp;mv=other" daa-ll="View plans and prici-6--Acrobat">View plans and pricing</a></li>
+        </ul>
+      </div>
+      <div class="col col-2">
+        <h4 id="experience-cloud">Experience Cloud</h4>
+        <ul>
+          <li><a href="https://www.adobe.com/experience-cloud.html" daa-ll="Discover Experience -7--Experience Cloud">Discover Experience Cloud</a></li>
+          <li><a href="https://www.adobe.com/request-consultation/experience-cloud.html" daa-ll="Get your free demo-8--Experience Cloud">Get your free demo</a></li>
+        </ul>
+        <h4 id="explore-the-possibilities">Explore the possibilities.</h4>
+        <ul>
+          <li><a href="https://www.adobe.com/creativecloud/photography.html" daa-ll="Photography-9--Explore the possibil">Photography</a></li>
+          <li><a href="https://www.adobe.com/creativecloud/video.html" daa-ll="Video-10--Explore the possibil">Video</a></li>
+          <li><a href="https://www.adobe.com/creativecloud/illustration.html" daa-ll="Illustration-11--Explore the possibil">Illustration</a></li>
+          <li><a href="https://www.adobe.com/creativecloud/ui-ux.html" daa-ll="UI and UX-12--Explore the possibil">UI and UX</a></li>
+          <li><a href="https://www.adobe.com/creativecloud/design.html" daa-ll="Graphic design-13--Explore the possibil">Graphic design</a></li>
+          <li><a href="https://www.adobe.com/creativecloud/3d-augmented-reality.html" daa-ll="3D and AR-14--Explore the possibil">3D and AR</a></li>
+          <li><a href="https://www.adobe.com/creativecloud/social-media.html" daa-ll="Social media-15--Explore the possibil">Social media</a></li>
+        </ul>
+        <h4 id="try-for-free">Try for free.</h4>
+        <ul>
+          <li><a href="https://www.adobe.com/acrobat/online/word-to-pdf.html?promoid=2FDNCKGK&amp;mv=other" daa-ll="Word to PDF-16--Try for free">Word to PDF</a></li>
+          <li><a href="https://www.adobe.com/acrobat/online/jpg-to-pdf.html?promoid=2SLRC68G&amp;mv=other" daa-ll="JPG to PDF-17--Try for free">JPG to PDF</a></li>
+          <li><a href="https://www.adobe.com/acrobat/online/excel-to-pdf.html?promoid=2K4PCFQJ&amp;mv=other" daa-ll="Excel to PDF-18--Try for free">Excel to PDF</a></li>
+          <li><a href="https://www.adobe.com/acrobat/online/compress-pdf.html?promoid=2XBSC2JF&amp;mv=other" daa-ll="Compress PDF-19--Try for free">Compress PDF</a></li>
+          <li><a href="https://www.adobe.com/acrobat/online/ppt-to-pdf.html?promoid=2NVQC9ZH&amp;mv=other" daa-ll="PPT to PDF-20--Try for free">PPT to PDF</a></li>
+          <li><a href="https://www.adobe.com/acrobat/online/sign-pdf.html?promoid=G4FRYV11&amp;mv=othe" daa-ll="Fill Sign-21--Try for free">Fill &amp; Sign</a></li>
+        </ul>
+      </div>
+      <div class="col col-3">
+        <h4 id="check-out-our-solutions">Check out our solutions.</h4>
+        <ul>
+          <li><a href="https://business.adobe.com/products/analytics/adobe-analytics.html" daa-ll="Adobe Analytics-22--Check out our soluti">Adobe Analytics</a></li>
+          <li><a href="https://business.adobe.com/products/experience-manager/adobe-experience-manager.html" daa-ll="Adobe Experience Man-23--Check out our soluti">Adobe Experience Manager</a></li>
+          <li><a href="https://business.adobe.com/products/magento/magento-commerce.html" daa-ll="Adobe Commerce Cloud-24--Check out our soluti">Adobe Commerce Cloud</a></li>
+          <li><a href="https://business.adobe.com/products/marketo/adobe-marketo.html" daa-ll="Adobe Marketo Engage-25--Check out our soluti">Adobe Marketo Engage</a></li>
+          <li><a href="https://business.adobe.com/products/workfront/main.html" daa-ll="Adobe Workfront-26--Check out our soluti">Adobe Workfront</a></li>
+        </ul>
+      </div>
+    </div>
+  </div><div class="content" daa-lh="b3|content|nopzn|nopzn"><h3 id="be">Be</h3><p><a href="https://www.behance.net/rsvn" daa-ll="The Story Begins Her-1--Be">The Story Begins Here by Risfan Fardiansyah</a></p></div>
+  
+  
+  <div class="section-metadata">
+    <div>
+      <div>style</div>
+      <div>xl spacing</div>
+    </div>
+    <div>
+      <div>background</div>
+      <div>
+        
+      </div>
+    </div>
+  </div>
+</div></div></div></div></main>
+    <footer class="global-footer" daa-lh="gnav|theblog-helix|footer|nopzn|nopzn"><div class="feds-footer-icons"><!--?xml version="1.0" encoding="utf-8"?-->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 
-</html>
+<symbol id="footer-icon-globe" viewBox="0 0 50 50">
+  <path d="M50 23.8c-.2-3.3-1-6.5-2.4-9.5A24.81 24.81 0 0 0 26.2 0h-2.4C14.6.4 6.3 5.9 2.4 14.3 1 17.3.2 20.5 0 23.8v2.4c.2 3.3 1 6.5 2.4 9.5 4 8.4 12.2 13.9 21.4 14.3h2.4c9.2-.4 17.5-5.9 21.4-14.3 1.4-3 2.2-6.2 2.4-9.5v-2.4zm-2.4 0h-9.5c0-3.2-.4-6.4-1.2-9.5H45c1.6 2.9 2.5 6.2 2.6 9.5zm-14-11.9h-7.4V2.6c3.1.7 5.7 4.5 7.4 9.3zm-9.8-9.3v9.3h-7.4c1.7-4.8 4.3-8.6 7.4-9.3zm0 11.7v9.5h-9.5c.1-3.2.6-6.4 1.4-9.5h8.1zm0 11.9v9.5h-8.1c-.8-3.1-1.3-6.3-1.4-9.5h9.5zm0 11.9v9.3c-3.1-.7-5.7-4.5-7.4-9.3h7.4zm2.4 9.3v-9.3h7.4c-1.7 4.8-4.3 8.6-7.4 9.3zm0-11.7v-9.5h9.5c-.1 3.2-.6 6.4-1.4 9.5h-8.1zm0-11.9v-9.5h8.1c.8 3.1 1.3 6.3 1.4 9.5h-9.5zm17.1-11.9h-7.1c-.9-3.1-2.4-6.1-4.5-8.6 4.7 1.5 8.8 4.5 11.6 8.6zM18.6 3.3c-2.2 2.5-3.8 5.4-4.8 8.6H6.7c2.9-4.1 7.1-7.1 11.9-8.6zM5 14.3h8.1c-.7 3.1-1.1 6.3-1.2 9.5H2.4c.1-3.3 1-6.6 2.6-9.5zM2.4 26.2h9.5c0 3.2.4 6.4 1.2 9.5H5c-1.6-2.9-2.5-6.2-2.6-9.5zm4 11.9h7.4c.9 3.1 2.4 6.1 4.5 8.6-4.7-1.5-8.8-4.5-11.7-8.6h-.2zm25 8.6c2.2-2.5 3.8-5.4 4.8-8.6h7.4c-3 4.1-7.3 7.2-12.2 8.6zm13.6-11h-8.1c.7-3.1 1.1-6.3 1.2-9.5h9.5c-.1 3.3-1 6.6-2.6 9.5z"></path>
+</symbol>
+
+<symbol id="footer-icon-adchoices" viewBox="0 0 9 9">
+  <path d="M7.99 5.23c.78-.43.92-.97.01-1.51L1.61.23C.83-.21.2.15.2 1.03v6.88c0 1.13.59 1.24 1.37.82l.73-.41c.12-.08.4-.32.32-.64-.07-.3-.33-.39-.62-.31-.44.24-.71 0-.71-.49v-4.9c0-.49.35-.69.78-.45l4.41 2.52c.43.25.43.64-.01.88L3.75 6.34V4.67a.47.47 0 1 0-.94 0v2.37c0 .26.22.44.47.53.1.04.3.05.44-.03l4.27-2.31z"></path><path d="M3.79 3.42a.5.5 0 1 1-.98 0 .5.5 0 0 1 .98 0"></path>
+</symbol>
+
+<symbol id="footer-icon-facebook" viewBox="0 0 35 35">
+  <path fill="currentColor" d="M28.44 0a6.32 6.32 0 0 1 4.63 1.93A6.32 6.32 0 0 1 35 6.55v21.88A6.57 6.57 0 0 1 28.44 35h-4.29V21.44h4.54l.68-5.28h-5.22v-3.38a2.92 2.92 0 0 1 .54-1.91 2.66 2.66 0 0 1 2.08-.64l2.78-.02V5.49a30.54 30.54 0 0 0-4.05-.2 6.77 6.77 0 0 0-4.96 1.82 6.9 6.9 0 0 0-1.85 5.15v3.9h-4.56v5.28h4.55V35H6.57a6.32 6.32 0 0 1-4.63-1.93A6.32 6.32 0 0 1 0 28.45V6.56a6.32 6.32 0 0 1 1.93-4.63A6.32 6.32 0 0 1 6.55 0Z"></path>
+</symbol>
+
+<symbol id="footer-icon-instagram" viewBox="0 0 35 35">
+  <path fill="currentColor" d="M4.5.1h26c2.4-.1 4.5 1.8 4.6 4.3v25.9c.1 2.5-1.9 4.5-4.4 4.6H4.5C2.1 35 0 33.1-.1 30.6V4.4C0 2 2.1 0 4.5.1zM25.7 4c-.8 0-1.5.6-1.5 1.5V9.3c0 .8.6 1.5 1.5 1.5h4c.8 0 1.5-.6 1.5-1.5V5.5c0-.8-.6-1.5-1.5-1.5h-4zm5.4 10.9H28a10.67 10.67 0 0 1-10.3 13.6h-.2c-5.9 0-10.9-4.8-10.9-10.5 0-1 .2-2.1.4-3.1H3.9v14.8c0 .7.6 1.3 1.3 1.3h24.2c.7 0 1.3-.5 1.3-1.2V14.9h.4zm-13.5-4.4c-3.7.1-6.7 3.2-6.5 7s3.2 6.7 7 6.5c3.7-.1 6.5-3.1 6.5-6.8-.1-3.7-3.2-6.7-7-6.7z"></path>
+</symbol>
+
+<symbol id="footer-icon-twitter" viewBox="0 0 35 35">
+  <path fill="currentColor" d="M28.5 0h-22C2.9 0 0 2.9 0 6.5v22C0 32.1 2.9 35 6.5 35h22c3.6 0 6.5-2.9 6.5-6.5v-22C35 2.9 32.1 0 28.5 0zM30 30.4h-5.9c-.3 0-.6-.1-.8-.4L16 21l-7.3 9.1c-.2.2-.5.4-.8.4-.2 0-.4-.1-.6-.2-.4-.3-.5-1-.2-1.4l7.6-9.5L4.2 6.2c-.4-.4-.3-1.1.1-1.4.2-.2.4-.2.7-.2h5.9c.3 0 .6.1.8.4l7.3 9 7.3-9.1c.3-.4 1-.5 1.4-.2.4.3.5 1 .2 1.4l-7.6 9.5 10.5 13.1c.2.2.3.4.3.7-.1.6-.5 1-1.1 1zm-2.1-2h-3.3L7.1 6.6h3.3l17.5 21.8z"></path>
+</symbol>
+
+<symbol id="footer-icon-linkedin" viewBox="0 0 35 35">
+  <path fill="currentColor" d="M5.4 29.3h5.26V13.49H5.4ZM11 8.61a2.7 2.7 0 0 0-.81-1.96 2.9 2.9 0 0 0-2.12-.78 3.03 3.03 0 0 0-2.16.78 2.56 2.56 0 0 0-.83 1.96 2.6 2.6 0 0 0 .81 1.95 2.9 2.9 0 0 0 2.11.79h.02a3 3 0 0 0 2.17-.79A2.59 2.59 0 0 0 11 8.61ZM24.34 29.3h5.26v-9.07a7.56 7.56 0 0 0-1.66-5.3 5.7 5.7 0 0 0-4.4-1.8 5.3 5.3 0 0 0-4.76 2.66h.04v-2.3h-5.26q.07 1.5 0 15.81h5.26v-8.84a3.75 3.75 0 0 1 .16-1.27 3.52 3.52 0 0 1 1.03-1.36 2.58 2.58 0 0 1 1.68-.56q2.64 0 2.65 3.58ZM35 6.56v21.88A6.57 6.57 0 0 1 28.44 35H6.56a6.32 6.32 0 0 1-4.63-1.93A6.32 6.32 0 0 1 0 28.45V6.56a6.32 6.32 0 0 1 1.93-4.63A6.32 6.32 0 0 1 6.55 0h21.88a6.32 6.32 0 0 1 4.63 1.93A6.32 6.32 0 0 1 35 6.55Z"></path>
+</symbol>
+
+<symbol id="footer-icon-pinterest" viewBox="0 0 35 35">
+  <path fill="currentColor" d="M27.7 0H7.3C3.3 0 0 3.3 0 7.3v20.4c0 4 3.3 7.3 7.3 7.3h20.4c4 0 7.3-3.3 7.3-7.3V7.3c0-4-3.3-7.3-7.3-7.3zm-10 29.3c-1.2 0-2.4-.2-3.4-.5.5-.8 1.2-2.1 1.5-3.2.1-.5.7-2.8.7-2.8.4.7 1.5 1.3 2.7 1.3 3.5 0 6-3.2 6-7.2S22 10.3 18 10.3c-5 0-7.7 3.4-7.7 7 0 1.7.9 3.8 2.4 4.5.2.1.3.1.4-.2 0-.2.2-1 .3-1.3 0-.1 0-.2-.1-.3-.5-.6-.9-1.7-.9-2.7 0-2.6 1.9-5 5.3-5 2.9 0 4.9 2 4.9 4.7 0 3.1-1.6 5.3-3.7 5.3-1.1 0-2-.9-1.7-2.1.3-1.4 1-2.9 1-3.9 0-.9-.5-1.6-1.5-1.6-1.2 0-2.1 1.2-2.1 2.8 0 1 .3 1.7.3 1.7s-1.2 4.9-1.4 5.8c-.2 1.1-.1 2.6 0 3.5C9.1 26.9 6 22.6 6 17.6 6 11.2 11.2 6 17.6 6s11.7 5.2 11.7 11.7-5.2 11.6-11.6 11.6z"></path>
+</symbol>
+
+<symbol id="footer-icon-discord" viewBox="0 0 35 35">
+  <g fill="currentColor"><path d="M22.1 15.7c-1.4 0-2.5 1.3-2.5 2.8s1.1 2.8 2.5 2.8 2.5-1.3 2.5-2.8c0-1.5-1.1-2.8-2.5-2.8zM12.9 15.7c-1.4 0-2.5 1.3-2.5 2.8s1.1 2.8 2.5 2.8 2.5-1.3 2.5-2.8c0-1.5-1.1-2.8-2.5-2.8z"></path><path d="M27.7 0H7.3C3.3 0 0 3.3 0 7.3v20.4c0 4 3.3 7.3 7.3 7.3h20.4c4 0 7.3-3.3 7.3-7.3V7.3c0-4-3.3-7.3-7.3-7.3zm3.6 24.5c-.1 0-.1 0 0 0-2.4 1.8-4.7 2.9-7 3.6h-.1c-.5-.7-1-1.5-1.4-2.3v-.1c.8-.3 1.5-.6 2.2-1 .1 0 .1-.1 0-.1-.1-.1-.3-.2-.4-.3h-.1c-4.5 2.1-9.4 2.1-13.9 0h-.1c-.1.1-.3.2-.4.3-.1 0 0 .1 0 .1.7.4 1.4.7 2.2 1 0 0 .1.1 0 .1-.4.8-.9 1.6-1.4 2.3h-.1c-2.3-.7-4.6-1.8-6.9-3.5v-.1c-.6-5.2.3-10.4 3.9-15.8 1.8-.8 3.7-1.4 5.6-1.8h.1l.7 1.4c2.1-.3 4.2-.3 6.3 0l.7-1.4h.1c2 .3 3.9.9 5.6 1.8 3.4 4.6 4.9 9.8 4.4 15.8z"></path></g>
+</symbol>
+
+<symbol id="footer-icon-behance" viewBox="0 0 35 35">
+  <path fill="currentColor" d="M12 21.9H8.8V19H12c2.8 0 3 2.9 0 2.9zm9.9-3.9h4.4c-.2-2.5-4-2.9-4.4 0zm-10-4.9H8.8V16h3.5c2.4 0 2.8-2.9-.4-2.9zM35 7.3v20.4c0 4-3.3 7.3-7.3 7.3H7.3c-4 0-7.3-3.3-7.3-7.3V7.3C0 3.3 3.3 0 7.3 0h20.4c4 0 7.3 3.3 7.3 7.3zm-14.6 4.4h7.3v-1.5h-7.3v1.5zm-5.2 5.2c2.8-1.4 2.7-6.6-2.6-6.7H5.8v14.6h6.3c6.6 0 6.5-6.6 3.1-7.9zm13.9.9c-.4-2.6-2.2-4.3-5.2-4.3-3.1 0-4.9 2-4.9 5.8s2 5.5 5 5.5 4.5-1.7 5-2.9h-3.1c-1.1 1.2-4.2.8-4-2h7.4c-.1-.9-.2-1.6-.2-2.1z"></path>
+</symbol>
+
+<symbol id="footer-icon-youtube" viewBox="0 0 35 35">
+  <path fill="currentColor" d="M27.7 0H7.3C3.3 0 0 3.3 0 7.3v20.4c0 4 3.3 7.3 7.3 7.3h20.4c4 0 7.3-3.3 7.3-7.3V7.3c0-4-3.3-7.3-7.3-7.3zm2.6 23.9a3.3 3.3 0 0 1-2.3 2.4c-3.3.8-17.9.7-20.9 0-1.2-.3-2.1-1.2-2.4-2.4-.8-3.1-.7-9.8 0-12.8A3.3 3.3 0 0 1 7 8.7c4.4-.9 19.4-.6 20.9 0 1.2.3 2.1 1.2 2.4 2.4.8 3.3.8 9.5 0 12.8z"></path><path fill="currentColor" d="m14.9 21.5 7-4-7-4z"></path>
+</symbol>
+
+<symbol id="footer-icon-weibo" viewBox="0 0 18 18">
+  <path fill="currentColor" d="M15.94 3.35a4.1 4.1 0 0 0-3.9-1.26.6.6 0 1 0 .25 1.16A2.92 2.92 0 0 1 15.67 7a.6.6 0 0 0 1.13.37 4.1 4.1 0 0 0-.86-4.02Z"></path><path fill="currentColor" d="M14.38 4.77a2 2 0 0 0-1.9-.62.51.51 0 1 0 .21 1 .98.98 0 0 1 1.14 1.26.51.51 0 1 0 .97.31 2 2 0 0 0-.42-1.95Zm-6.23 5.82a.37.37 0 0 1-.44.16.26.26 0 0 1-.11-.39.37.37 0 0 1 .43-.16.26.26 0 0 1 .12.39Zm-.82 1.04a.98.98 0 0 1-1.18.4A.68.68 0 0 1 5.9 11a.98.98 0 0 1 1.16-.39.68.68 0 0 1 .29 1.03Zm.94-2.8a2.8 2.8 0 0 0-3.13 1.37 1.9 1.9 0 0 0 1.21 2.71 2.77 2.77 0 0 0 3.31-1.4 1.91 1.91 0 0 0-1.4-2.68Z"></path><path fill="currentColor" d="M8.01 13.64c-2.56.25-4.78-.91-4.95-2.6s1.78-3.25 4.35-3.5 4.78.9 4.94 2.59-1.77 3.25-4.34 3.5Zm5.13-5.6c-.22-.06-.36-.1-.25-.4a1.61 1.61 0 0 0 0-1.54c-.5-.72-1.88-.68-3.46-.02 0 0-.5.22-.37-.17A1.79 1.79 0 0 0 8.9 4.1c-.86-.86-3.13.03-5.09 1.99a6.7 6.7 0 0 0-2.31 4.34c0 2.57 3.29 4.13 6.5 4.13 4.21 0 7.02-2.45 7.02-4.4a2.35 2.35 0 0 0-1.88-2.12Z"></path>
+</symbol>
+
+<symbol id="footer-icon-social-media" viewBox="0 0 24 24">
+  <path fill="currentColor" d="M16.5 8.1c-1-2.6-3.9-4.5-7.4-4.5-4.3 0-7.7 2.8-7.7 6.4 0 1.9 1 3.7 2.7 4.8L3 17.2l2.9-1.5c1 .4 2.1.6 3.2.6h.8c-.4-.7-.6-1.5-.6-2.4 0-3.2 3.1-5.8 6.9-5.8h.3zM5.8 7.5c0-.4.3-.8.8-.8.4 0 .8.3.8.8 0 .4-.3.8-.8.8-.4-.1-.8-.4-.8-.8zm4.8 0c0-.4.3-.8.8-.8.4 0 .8.3.8.8 0 .4-.3.8-.8.8-.4-.1-.8-.4-.8-.8zm7.7 11.6c-.7.2-1.4.3-2.1.3-3.6 0-6.5-2.5-6.5-5.5s2.9-5.5 6.5-5.5 6.5 2.5 6.5 5.5c0 1.8-1.1 3.4-2.7 4.4l.8 2.1-2.5-1.3zm-4.6-6.6c.4 0 .7-.3.7-.7s-.3-.7-.7-.7c-.4 0-.7.3-.7.7s.3.7.7.7zm4.5 0c.4 0 .7-.3.7-.7s-.3-.7-.7-.7-.7.3-.7.7.3.7.7.7z"></path>
+</symbol>
+
+</svg>
+</div><div class="feds-footer-wrapper">
+        
+        
+        <div class="feds-footer-options">
+          <div class="feds-footer-miscLinks">
+            <div class="feds-regionPicker-wrapper">
+        <a href="https://blog.adobe.com/doesntexist#" class="feds-regionPicker" aria-expanded="false" aria-haspopup="true" role="button">
+        <svg xmlns="http://www.w3.org/2000/svg" class="feds-regionPicker-globe" focusable="false">
+          <use href="#footer-icon-globe"></use>
+        </svg>
+        <span class="feds-regionPicker-text">Change Language</span>
+      </a>
+      <div class="fragment" data-path="/fragments/languages"><div class="section"><div class="content" data-block=""><p><a href="https://blog.adobe.com/de/">Deutsch</a></p><p><a href="https://blog.adobe.com/es/">Español</a></p><p><a href="https://blog.adobe.com/en/apac">APAC (English)</a></p><p><a href="https://blog.adobe.com/en/uk">UK (English)</a></p><p><strong><a href="https://blog.adobe.com/">US (English)</a></strong></p><p><a href="https://blog.adobe.com/fr/">Français</a></p><p><a href="https://blog.adobe.com/it">Italiano</a></p><p><a href="https://blog.adobe.com/jp/">日本</a></p><p><a href="https://blog.adobe.com/ko/">한국어</a></p><p><a href="https://blog.adobe.com/br/">Português</a></p></div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+</div></div></div>
+            
+          </div>
+          <div class="feds-footer-legalWrapper" daa-lh="Legal"><p class="feds-footer-privacySection"><span class="feds-footer-copyright">
+        Copyright © 2024 All rights reserved.
+      </span> / <a href="https://www.adobe.com/privacy.html" class="feds-footer-privacyLink" daa-ll="Privacy-1">Privacy</a> / <a href="https://www.adobe.com/legal/terms.html" class="feds-footer-privacyLink" daa-ll="Terms of Use-2">Terms of Use</a> / <a href="https://www.adobe.com/#openPrivacy" class="feds-footer-privacyLink" daa-ll="Cookie preferences-3">Cookie preferences</a> / <a href="https://www.adobe.com/go/ca-rights" class="feds-footer-privacyLink" daa-ll="Do not sell or share my person-4">Do not sell or share my personal information</a> / <a href="https://www.adobe.com/privacy/opt-out.html#interest-based-ads" class="feds-footer-privacyLink" daa-ll="AdChoices-5"><svg xmlns="http://www.w3.org/2000/svg" class="feds-adChoices-icon" focusable="false">
+        <use href="#footer-icon-adchoices"></use>
+      </svg>AdChoices</a></p></div>
+        </div>
+      </div></footer>
+  
+
+<iframe name="Adobe Alloy" style="display: none; width: 0px; height: 0px;" src="./404_files/saved_resource.html"></iframe></body></html>
