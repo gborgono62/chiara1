@@ -35,8 +35,8 @@ main .carousel > div {
   position: relative;
   min-height: 580px;
   align-items: flex-end;
-  display: flex;
-}
+  display :flex; 
+  }
 
 main .carousel div.carousel-text {
   max-width: 1200px;
@@ -44,17 +44,18 @@ main .carousel div.carousel-text {
   background-color: white;
   min-height: 188px;
   padding: 0 28px;
+  color: green; 
   }
 
 main .carousel div.carousel-text p {
   margin: 10px 0 16px;
   line-height: 1.2;
-  }
+    }
 
 main .carousel div.carousel-text h2 {
   margin: 0;
   margin-top: 16px; 
-  color: blue; 
+  color: green; 
 }
 
 main .carousel div.carousel-text .button {
