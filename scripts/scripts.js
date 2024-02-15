@@ -121,7 +121,7 @@ function autolinkModals(element) {
       const { openModal } = await import(`${window.hlx.codeBasePath}/blocks/modal/modal.js`);
       openModal(origin.href);
     }
-  })
+  });
 }
 
 /**
