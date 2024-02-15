@@ -55,18 +55,6 @@ export function getAllMetadata(scope) {
 }
 
 // inclusion of Generative code AI by borgo END 
-// inclusion of autolinkModal by borgo   
-function autolinkModals(element) {
-  element.addEventListener('click', async (e) => {
-    const origin = e.target.closest('a');
-
-    if (origin && origin.href && origin.href.includes('/modals/')) {
-      e.preventDefault();
-      const { openModal } = await import(`${window.hlx.codeBasePath}/blocks/modal/modal.js`);
-      openModal(origin.href);
-    }
-  });
-}
 
 /**
   * Builds hero block and prepends to main in a new section.
@@ -121,6 +109,19 @@ async function loadFonts() {
   } catch (e) {
     // do nothing
   }
+}
+
+function autolinkModals(element) {
+  element.addEventListener('click', async (e) => {
+    const origin = e.target.closest('a');
+
+
+    if (origin && origin.href && origin.href.includes('/modals/')) {
+      e.preventDefault();
+      const { openModal } = await import(`${window.hlx.codeBasePath}/blocks/modal/modal.js`);
+      openModal(origin.href);
+    }
+  });
 }
 
 /**
