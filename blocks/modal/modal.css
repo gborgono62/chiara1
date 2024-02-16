@@ -9,13 +9,13 @@ body.modal-open {
   border: 1px solid #ccc;
   border-radius: var(--dialog-border-radius);
   width: 100vw;
-}
+  }
 
 .modal dialog .modal-content {
   overflow-y: auto;
   overscroll-behavior: none;
   max-height: calc(100dvh - 60px);
-}
+ }
 
 @media (width >= 600px) {
   .modal dialog {
