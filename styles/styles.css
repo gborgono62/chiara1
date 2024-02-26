@@ -18,6 +18,10 @@
   --overlay-background-color: #eee;
   --highlight-background-color: #ccc;
   --text-color: #000;
+  --text-color-light: #ebebeb;
+  --heading-highlight-color: #ffea00;
+  --overlay-text-color: var(--text-color);
+  --highlight-text-color: var(--text-color);
 
   /* fonts */
   --body-font-family: roboto, roboto-fallback;
@@ -195,7 +199,9 @@ main input:hover {
 }
 
 main blockquote {
-  font-style: italic;
+  color: var(--blockquote-color);
+  background-color: var(--blockquote-background-color);
+  font-family: var(--heading-font-family);
   margin: 3rem;
   text-indent: -1rem;
   hanging-punctuation: first;
