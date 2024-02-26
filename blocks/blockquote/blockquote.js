@@ -8,6 +8,6 @@ export default function decorate(block) {
   if (authorDiv) {
     const author = document.createElement('p');
     author.innerHTML = `<b><i>${authorDiv.innerHTML}</i></b>`;
-    authorDiv.replaceWith(author);
+    authorDiv.replaceWith(author); 
   }
 }

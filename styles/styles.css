@@ -246,6 +246,7 @@ main .section {
 }
 
 /* section metadata */
+/* background-color: var(--highlight-background-color); */
 main .section.highlight {
   background-color: var(--highlight-background-color);
 }
