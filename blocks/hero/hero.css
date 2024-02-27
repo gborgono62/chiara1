@@ -35,7 +35,7 @@ main .hero picture {
   left: 0;
   bottom: 0;
   right: 0;
-  object-fit: cover;
+  object-fit:cover ;
   box-sizing: border-box;
 }
 
