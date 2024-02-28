@@ -18,14 +18,14 @@ main .hero h1 {
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
-  color: yellow ; 
+  color: white; 
 }
 
 main .hero h2 {
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
-  color: red ;
+  color: orANGE ;
 }
 
 main .hero picture {
