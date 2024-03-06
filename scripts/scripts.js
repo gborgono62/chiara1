@@ -279,6 +279,13 @@ function buildAutoBlocks(main) {
  */
 // eslint-disable-next-line import/prefer-default-export
 export function decorateMain(main) {
+   // decorate external images with explicit external image marker
+   decorateExternalImages(main, '//External Image//');
+
+   // decorate external images with implicit external image marker
+   decorateExternalImages(main);
+
+ 
   // hopefully forward compatible button decoration
   decorateButtons(main);
   decorateIcons(main);
