@@ -124,7 +124,24 @@ function autolinkModals(element) {
     }
   });
 }
-
+/** borgo per aem-asset-selector
+ * Gets the extension of a URL.
+ * @param {string} url The URL
+ * @returns {string} The extension
+ * @private
+ * @example
+ * get_url_extension('https://example.com/foo.jpg');
+ * // returns 'jpg'
+ * get_url_extension('https://example.com/foo.jpg?bar=baz');
+ * // returns 'jpg'
+ * get_url_extension('https://example.com/foo');
+ * // returns ''
+ * get_url_extension('https://example.com/foo.jpg#qux');
+ * // returns 'jpg'
+ */
+function getUrlExtension(url) {
+  return url.split(/[#?]/)[0].split('.').pop().trim();
+}
 /** borgo per aem-asset-selector
  * Checks if an element is an external image.
  * @param {Element} element The element
